@@ -1,0 +1,197 @@
+package starter;
+
+import java.util.LinkedList;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+
+import org.omg.PortableServer.POA;
+import org.omg.PortableServer.POAPackage.ServantNotActive;
+import org.omg.PortableServer.POAPackage.WrongPolicy;
+
+import monitor.Monitor;
+import ggt.Koordinator;
+import ggt.Process;
+import ggt.ProcessHelper;
+import ggt.ProcessPOA;
+
+public class ProcessImpl extends ProcessPOA implements Runnable {
+	private String name;
+	private POA poa;
+
+	private volatile boolean running = true;
+	private LinkedList<Integer> newNumbers = new LinkedList<Integer>();
+	private LinkedList<String> newMarkers = new LinkedList<String>();
+	private LinkedList<Integer> newSeqNumbers = new LinkedList<Integer>();
+
+	private BlockingQueue<ProcessStatus> commandFifo = new LinkedBlockingQueue<ProcessStatus>();
+
+	private Process rightNeighbor;
+	private Process leftNeighbor;
+	private int delay;
+	private Monitor theMonitor;
+	private Koordinator koor;
+	private Thread tp;
+	private int mi;
+
+	private boolean rightMark = false;
+	private boolean leftMark = false;
+	private boolean terminateMark = false;
+	private int sequenceNumber = 0;
+
+	public ProcessImpl(String name, POA poa) {
+		super();
+		this.tp = new Thread(this);
+		this.name = name;
+		this.poa = poa;
+	}
+
+	@Override
+	public synchronized String name() {
+		return name;
+	}
+
+	@Override
+	public synchronized void newNumber(int number, String name) {
+		theMonitor.rechnen(this.name, name, number);
+		newNumbers.add(number);
+		commandFifo.add(ProcessStatus.CALCULATE);
+	}
+
+	@Override
+	public synchronized void sendMarker(String terminator, int seqN) {
+
+		if (sequenceNumber <= seqN) {
+
+			newMarkers.add(terminator);
+			newSeqNumbers.add(seqN);
+			commandFifo.add(ProcessStatus.TERMINATE);
+		}
+
+	}
+
+	@Override
+	public synchronized void quit(String starterName) {
+		running = false;
+		System.out.println(this.name + "beendet");
+
+	}
+
+	@Override
+	public synchronized void init(Process rightNeighbor, Process leftNeighbor,
+			int startGGT, int delay, Monitor theMonitor, Koordinator koor) {
+		this.rightNeighbor = rightNeighbor;
+		this.leftNeighbor = leftNeighbor;
+		this.delay = delay;
+		this.theMonitor = theMonitor;
+		this.koor = koor;
+		this.mi = startGGT;
+
+	}
+
+	@Override
+	public synchronized void startCalulation() {
+		leftNeighbor.newNumber(mi, this.name);
+		rightNeighbor.newNumber(mi, this.name);
+	}
+
+	@Override
+	public void run() {
+		System.out.println("BAMs");
+		while (running) {
+
+			if (!commandFifo.isEmpty()) {
+				switch (commandFifo.poll()) {
+				case CALCULATE:
+					calculateMi();
+					break;
+
+				case TERMINATE:
+					snapshot();
+					break;
+				default:
+
+					break;
+				}
+			}
+		}
+	}
+
+	private void snapshot() {
+		System.out.println("neue nummer: " + newSeqNumbers.getFirst() + "alte seq: " + sequenceNumber);
+		if (newSeqNumbers.getFirst() > sequenceNumber) {
+			rightMark = false;
+			leftMark = false;
+			terminateMark = true;
+			sequenceNumber = newSeqNumbers.poll();
+			rightNeighbor.sendMarker(this.name, sequenceNumber);
+			leftNeighbor.sendMarker(this.name, sequenceNumber);
+		}else{
+			newSeqNumbers.poll();
+		}
+		
+		System.out.println("new marker: " + newMarkers.getFirst() + "rightmarker");
+		if (rightNeighbor.name().equals(newMarkers.getFirst())) {
+			rightMark = true;
+		}
+		if (leftNeighbor.name().equals(newMarkers.getFirst())) {
+			leftMark = true;
+		}
+
+		if (rightMark && leftMark) {
+			System.out.println("right and left true");
+			if (terminateMark) {
+				Process pro;
+				try {
+					pro = ProcessHelper.narrow(poa.servant_to_reference(this));
+					koor.terminationCcheck(pro, sequenceNumber, true);
+				} catch (ServantNotActive | WrongPolicy e) {
+					e.printStackTrace();
+				}
+			} else {
+				Process pro;
+				try {
+					pro = ProcessHelper.narrow(poa.servant_to_reference(this));
+					koor.terminationCcheck(pro, sequenceNumber, false);
+				} catch (ServantNotActive | WrongPolicy e) {
+					e.printStackTrace();
+				}
+
+			}
+		}
+		if(rightMark && leftMark && terminateMark){
+			
+			theMonitor.terminieren(name, newMarkers.poll(), true);
+		}else{
+			theMonitor.terminieren(name, newMarkers.poll(), false);
+		}
+	}
+
+	private void calculateMi() {
+		if (newNumbers.getFirst() < mi) {
+			try {
+				Thread.sleep(delay);// simulate complex calculation
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+			mi = ((mi - 1) % newNumbers.poll()) + 1;
+
+			terminateMark = false;
+			
+			rightNeighbor.newNumber(mi, this.name);
+			leftNeighbor.newNumber(mi, this.name);
+		} else {
+			newNumbers.poll();
+		}
+
+	}
+
+	public Thread getThread() {
+		return this.tp;
+	}
+	
+	@Override
+	public int mi() {
+		return mi;
+	}
+
+}

@@ -10,7 +10,9 @@ import ggt.Koordinator;
 import ggt.Process;
 import ggt.ProcessHelper;
 import ggt.StarterPOA;
+import ggt.KoordinatorPackage.EAlreadyExists;
 import ggt.KoordinatorPackage.exAlreadyExists;
+import ggt.StarterPackage.EInvalidCount;
 import ggt.StarterPackage.exInvalidCount;
 
 public class StarterImpl extends StarterPOA {
@@ -32,10 +34,10 @@ public class StarterImpl extends StarterPOA {
 	}
 
 	@Override
-	public synchronized void createProcess(int count) throws exInvalidCount {
+	public synchronized void createProcess(int count) throws EInvalidCount {
 		int numberOfProcesses = count;
 		if (numberOfProcesses < 1) {
-			throw new exInvalidCount();
+			throw new EInvalidCount();
 		} else {
 			for (int i = 0; i < numberOfProcesses; i++) {
 				String pName = name + i;// make name
@@ -48,10 +50,7 @@ public class StarterImpl extends StarterPOA {
 				} catch (ServantNotActive | WrongPolicy e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
-				} catch (exAlreadyExists e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
+				} 
 			}
 		}
 	}

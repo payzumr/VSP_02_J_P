@@ -2,6 +2,7 @@ package server;
 
 import ggt.Process;
 import ggt.Starter;
+import ggt.KoordinatorPackage.EStarterNoSuchElement;
 
 import java.util.List;
 
@@ -20,6 +21,8 @@ public class TerminatorThread extends Thread {
 		this.koord = koord;
 	}
 
+	//Die run Methode wartet die uebergebene Zeit und startet dann den Terminierungsalgo um zu 
+	//prüfen ob die Processe fertig sind mit Ihren Berechnungen
 	@Override
 	public void run() {
 		
@@ -41,14 +44,18 @@ public class TerminatorThread extends Thread {
 
 				} else {
 					running = false;
-					koord.monitor.ergebnis(koord.lastProcess.name(), koord.lastProcess.getMi());
-					//Aufruf der Exit Methode der Starter
-					Starter[] tmp = koord.getStarterListe();
+					koord.monitor.ergebnis(koord.lastProcess.name(), koord.lastProcess.mi());
+					//Aufruf der Exit Methode der Starter					
+					Starter[] tmp = null;
+					try {
+						tmp = koord.getStarterListe();
+					} catch (EStarterNoSuchElement e) {
+						e.printStackTrace();
+					}
 					for (int i = 0; i < tmp.length; i++) {
 						//processExit muss in die IDL (aus der StartImpl)
 						tmp[i].processExit();
 					}
-					
 				}
 				sleep(termTime);
 			} catch (InterruptedException e) {

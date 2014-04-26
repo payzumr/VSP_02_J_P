@@ -60,6 +60,7 @@ module ggt {
 
         interface Process { 
                  readonly attribute string name;
+				 readonly attribute long mi;
                 
                  // Methods for the other Processes
                  void newNumber(in long number, in string senderName);
@@ -71,15 +72,14 @@ module ggt {
                  //Methods for the Koordinator
                  void init(in Process rightNeighbor, in Process leftNeighbor, in long  startGGT, in long delay, in Monitor theMonitor, in Koordinator koor);
                  void startCalulation();
-				 long getMi();
         };
         
         interface Starter { 
-                exception exInvalidCount{ string s; };
+                exception EInvalidCount{ string s; };
                 readonly attribute string name;
                 
                 //Methods for the Koordinator
-                void createProcess(in long count) raises( exInvalidCount );
+                void createProcess(in long count) raises( EInvalidCount );
                 void exit();
 				void processExit();
         };
@@ -87,22 +87,24 @@ module ggt {
         typedef sequence<Starter> StarterList;
         
         interface Koordinator { 
-                exception exAlreadyExists{ string s;};
+                exception EAlreadyExists{ string s;};
+				exception EStarterNoSuchElement{ string s;};
+				exception EInvalidAmount{ string s;};
                 
                 // Methods for the Process
-                void registerProcess(in Process process) raises( exAlreadyExists );
+                void registerProcess(in Process process);
                 void terminationCcheck(in Process terminator, in long seqN, in boolean status);
                 
                 // Methods for the Starter
-                void activateStarter (in Starter starter, in string starterName) raises( exAlreadyExists );
+                void activateStarter (in Starter starter, in string starterName) raises( EAlreadyExists );
                 void deleteStarter (in Starter starter);
 				
 				// Methods for the Monitor
 				void registerMonitor (in Monitor monitor);
                 
                 // Methods for the Client
-                void startCalculation(in long minProcesses, in long maxProcesses, in long minDelay, in long maxDelay, in long timeout, in long ggt);
-                StarterList getStarterListe();
+                void startCalculation(in long minProcesses, in long maxProcesses, in long minDelay, in long maxDelay, in long timeout, in long startGGT) raises( EInvalidAmount );
+                StarterList getStarterListe() raises( EStarterNoSuchElement );
                 void exit();
         };
 };

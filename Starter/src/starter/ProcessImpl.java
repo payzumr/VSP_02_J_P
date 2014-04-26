@@ -188,9 +188,11 @@ public class ProcessImpl extends ProcessPOA implements Runnable {
 	public Thread getThread() {
 		return this.tp;
 	}
-
-	public int getMi() {
+	
+	@Override
+	public int mi() {
 		return mi;
 	}
+
 
 }

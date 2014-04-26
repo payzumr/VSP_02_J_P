@@ -12,6 +12,8 @@ import org.omg.CosNaming.NamingContextExt;
 import org.omg.CosNaming.NamingContextExtHelper;
 
 import ggt.KoordinatorHelper;
+import ggt.KoordinatorPackage.EInvalidAmount;
+import ggt.KoordinatorPackage.EStarterNoSuchElement;
 
 public class Client {
 //args <Nameservice><operation><koordname><Monitorname><minProcesses><maxProcesses><minDelay><maxDelay><timeout><ggt>
@@ -30,37 +32,39 @@ public class Client {
 
 			// Objektreferenz mit Namen "koordinator" besorgen
 			org.omg.CORBA.Object obj = nc.resolve_str(args[2]);
-
-			// Monitor Objektreferezn
-
-			org.omg.CORBA.Object obj2 = nc.resolve_str(args[3]);
 			
 			// Down-Cast
 			Koordinator koordinator = KoordinatorHelper.narrow(obj);
-			Monitor monitor = MonitorHelper.narrow(obj2);
-			koordinator.registerMonitor(monitor);
 			
 			switch (args[1]) {
 			case "starterliste"	:
-				Starter[] starters = koordinator.getStarterListe();
-				 
-				if(starters == null){
-					System.out.println("Keine Starter registriert");
-				}else{
+				try{
+					
+					Starter[] starters = koordinator.getStarterListe();
 					for(int i = 0; i < starters.length; i++){
 						System.out.println("Starter " + i + ": " + starters[i].name());
-					}
 				}
+				}catch(EStarterNoSuchElement e){
+					System.out.println(e.s);
+				}
+
 				break;
 				 
 			case "start"	:
+				// Monitor Objektreferezn
+				org.omg.CORBA.Object obj2 = nc.resolve_str(args[3]);
+				Monitor monitor = MonitorHelper.narrow(obj2);
+				koordinator.registerMonitor(monitor);
+				try{
 				koordinator.startCalculation(	Integer.parseInt(args[4]),
 												Integer.parseInt(args[5]), 
 												Integer.parseInt(args[6]), 
 												Integer.parseInt(args[7]), 
 												Integer.parseInt(args[8]), 
 												Integer.parseInt(args[9]));
-				
+				}catch(EInvalidAmount e){
+					System.out.println(e.s);
+				}
 				System.out.println("Kalkulation gestartet");	
 				break;
 			case "ende"		:
