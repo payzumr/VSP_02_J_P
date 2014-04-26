@@ -19,11 +19,10 @@ public class ProcessImpl extends ProcessPOA implements Runnable {
 	private POA poa;
 
 	private volatile boolean running = true;
-	private LinkedList<Integer> newNumbers = new LinkedList<Integer>();//neue werte der nachbarn
-	private LinkedList<String> newMarkers = new LinkedList<String>();//namen der nachbarn die marker geschickt haben
-	private LinkedList<Integer> newSeqNumbers = new LinkedList<Integer>();//seqNr. der marker 
+	private LinkedList<Integer> newNumbers = new LinkedList<Integer>();
+	private LinkedList<String> newMarkers = new LinkedList<String>();
+	private LinkedList<Integer> newSeqNumbers = new LinkedList<Integer>();
 
-	//queue ueber commandos von anderen przessen(neue werte/marker)
 	private BlockingQueue<ProcessStatus> commandFifo = new LinkedBlockingQueue<ProcessStatus>();
 
 	private Process rightNeighbor;
@@ -34,7 +33,6 @@ public class ProcessImpl extends ProcessPOA implements Runnable {
 	private Thread tp;
 	private int mi;
 
-	//variablen fuer terminierungsalgorithmus
 	private boolean rightMark = false;
 	private boolean leftMark = false;
 	private boolean terminateMark = false;
@@ -47,18 +45,11 @@ public class ProcessImpl extends ProcessPOA implements Runnable {
 		this.poa = poa;
 	}
 
-	/**
-	 * gibt namen des prozesses zurueck
-	 */
 	@Override
 	public synchronized String name() {
 		return name;
 	}
 
-	/**
-	 * nachbarn können hier neue werte melden
-	 * es wird der monitor benachrichtigt und der neue wert in die linkedlist geschrieben
-	 */
 	@Override
 	public synchronized void newNumber(int number, String name) {
 		theMonitor.rechnen(this.name, name, number);
@@ -66,14 +57,10 @@ public class ProcessImpl extends ProcessPOA implements Runnable {
 		commandFifo.add(ProcessStatus.CALCULATE);
 	}
 
-	/**
-	 * nachbarn können hier neue marker mit seqNr melden
-	 * traegt marker in die linkedlist ein, wenn die seqNr aktuell ist
-	 */
 	@Override
 	public synchronized void sendMarker(String terminator, int seqN) {
 
-		if (sequenceNumber <= seqN) {//anfrage wird verworfen, wenn sie eine veraltete seqN hat
+		if (sequenceNumber <= seqN) {
 
 			newMarkers.add(terminator);
 			newSeqNumbers.add(seqN);
@@ -82,9 +69,6 @@ public class ProcessImpl extends ProcessPOA implements Runnable {
 
 	}
 
-	/**
-	 * beendet den Prozess
-	 */
 	@Override
 	public synchronized void quit(String starterName) {
 		running = false;
@@ -92,9 +76,6 @@ public class ProcessImpl extends ProcessPOA implements Runnable {
 
 	}
 
-	/**
-	 * initialisiert Prozessvariablen
-	 */
 	@Override
 	public synchronized void init(Process rightNeighbor, Process leftNeighbor,
 			int startGGT, int delay, Monitor theMonitor, Koordinator koor) {
@@ -107,20 +88,15 @@ public class ProcessImpl extends ProcessPOA implements Runnable {
 
 	}
 
-	/**
-	 * methode fuer koordinator zum starteten des ggt algorithmus
-	 */
 	@Override
 	public synchronized void startCalulation() {
 		leftNeighbor.newNumber(mi, this.name);
 		rightNeighbor.newNumber(mi, this.name);
 	}
 
-	/**
-	 * prueft ob neue commands in der queue sind und fuhrt diese aus
-	 */
 	@Override
 	public void run() {
+		System.out.println("BAMs");
 		while (running) {
 
 			if (!commandFifo.isEmpty()) {
@@ -140,16 +116,8 @@ public class ProcessImpl extends ProcessPOA implements Runnable {
 		}
 	}
 
-	/**
-	 * snapshot algorithmus
-	 */
 	private void snapshot() {
-		//System.out.println("neue nummer: " + newSeqNumbers.getFirst() + "alte seq: " + sequenceNumber);
-		
-		/*
-		 * wenn marker mit neuer seqN eingetroffen ist, werden variablen zurueckgesetzt
-		 * und benachrichtigt nachbarn
-		 */ 
+		System.out.println("neue nummer: " + newSeqNumbers.getFirst() + "alte seq: " + sequenceNumber);
 		if (newSeqNumbers.getFirst() > sequenceNumber) {
 			rightMark = false;
 			leftMark = false;
@@ -161,11 +129,7 @@ public class ProcessImpl extends ProcessPOA implements Runnable {
 			newSeqNumbers.poll();
 		}
 		
-		/*
-		 * wenn die nachricht von einem nachbarn eingetroffen ist,
-		 *  wird der entsprechende marker true gesetzt
-		 */
-		//System.out.println("new marker: " + newMarkers.getFirst() + "rightmarker");
+		System.out.println("new marker: " + newMarkers.getFirst() + "rightmarker");
 		if (rightNeighbor.name().equals(newMarkers.getFirst())) {
 			rightMark = true;
 		}
@@ -173,9 +137,9 @@ public class ProcessImpl extends ProcessPOA implements Runnable {
 			leftMark = true;
 		}
 
-		//wenn die marker von beiden nachbarn true sind, wird der koordinator informiert
 		if (rightMark && leftMark) {
-			if (terminateMark) {//nachricht, das prozess fertig ist
+			System.out.println("right and left true");
+			if (terminateMark) {
 				Process pro;
 				try {
 					pro = ProcessHelper.narrow(poa.servant_to_reference(this));
@@ -183,7 +147,7 @@ public class ProcessImpl extends ProcessPOA implements Runnable {
 				} catch (ServantNotActive | WrongPolicy e) {
 					e.printStackTrace();
 				}
-			} else {//nachricht, dass prozess noch nicht fertig ist
+			} else {
 				Process pro;
 				try {
 					pro = ProcessHelper.narrow(poa.servant_to_reference(this));
@@ -194,8 +158,6 @@ public class ProcessImpl extends ProcessPOA implements Runnable {
 
 			}
 		}
-		
-		//monitor wird informiert, dass prozess fertig/noch nicht fertig ist
 		if(rightMark && leftMark && terminateMark){
 			
 			theMonitor.terminieren(name, newMarkers.poll(), true);
@@ -203,9 +165,7 @@ public class ProcessImpl extends ProcessPOA implements Runnable {
 			theMonitor.terminieren(name, newMarkers.poll(), false);
 		}
 	}
-/**
- * berechnet neues Mi mithilfe des alten Mi und neum wert des nachbarn
- */
+
 	private void calculateMi() {
 		if (newNumbers.getFirst() < mi) {
 			try {
@@ -215,9 +175,8 @@ public class ProcessImpl extends ProcessPOA implements Runnable {
 			}
 			mi = ((mi - 1) % newNumbers.poll()) + 1;
 
-			terminateMark = false;//terminate marker wird zurueckgesetzt
+			terminateMark = false;
 			
-			//nachbarn neuen wert mitteilen
 			rightNeighbor.newNumber(mi, this.name);
 			leftNeighbor.newNumber(mi, this.name);
 		} else {

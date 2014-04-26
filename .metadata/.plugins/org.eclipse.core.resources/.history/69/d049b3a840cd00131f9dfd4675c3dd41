@@ -121,6 +121,7 @@ public class ProcessImpl extends ProcessPOA implements Runnable {
 	 */
 	@Override
 	public void run() {
+		System.out.println("BAMs");
 		while (running) {
 
 			if (!commandFifo.isEmpty()) {
@@ -144,7 +145,7 @@ public class ProcessImpl extends ProcessPOA implements Runnable {
 	 * snapshot algorithmus
 	 */
 	private void snapshot() {
-		//System.out.println("neue nummer: " + newSeqNumbers.getFirst() + "alte seq: " + sequenceNumber);
+		System.out.println("neue nummer: " + newSeqNumbers.getFirst() + "alte seq: " + sequenceNumber);
 		
 		/*
 		 * wenn marker mit neuer seqN eingetroffen ist, werden variablen zurueckgesetzt
@@ -165,7 +166,7 @@ public class ProcessImpl extends ProcessPOA implements Runnable {
 		 * wenn die nachricht von einem nachbarn eingetroffen ist,
 		 *  wird der entsprechende marker true gesetzt
 		 */
-		//System.out.println("new marker: " + newMarkers.getFirst() + "rightmarker");
+		System.out.println("new marker: " + newMarkers.getFirst() + "rightmarker");
 		if (rightNeighbor.name().equals(newMarkers.getFirst())) {
 			rightMark = true;
 		}

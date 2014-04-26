@@ -121,6 +121,7 @@ public class ProcessImpl extends ProcessPOA implements Runnable {
 	 */
 	@Override
 	public void run() {
+		System.out.println("BAMs");
 		while (running) {
 
 			if (!commandFifo.isEmpty()) {
@@ -141,15 +142,10 @@ public class ProcessImpl extends ProcessPOA implements Runnable {
 	}
 
 	/**
-	 * snapshot algorithmus
+	 * 
 	 */
 	private void snapshot() {
-		//System.out.println("neue nummer: " + newSeqNumbers.getFirst() + "alte seq: " + sequenceNumber);
-		
-		/*
-		 * wenn marker mit neuer seqN eingetroffen ist, werden variablen zurueckgesetzt
-		 * und benachrichtigt nachbarn
-		 */ 
+		System.out.println("neue nummer: " + newSeqNumbers.getFirst() + "alte seq: " + sequenceNumber);
 		if (newSeqNumbers.getFirst() > sequenceNumber) {
 			rightMark = false;
 			leftMark = false;
@@ -161,11 +157,7 @@ public class ProcessImpl extends ProcessPOA implements Runnable {
 			newSeqNumbers.poll();
 		}
 		
-		/*
-		 * wenn die nachricht von einem nachbarn eingetroffen ist,
-		 *  wird der entsprechende marker true gesetzt
-		 */
-		//System.out.println("new marker: " + newMarkers.getFirst() + "rightmarker");
+		System.out.println("new marker: " + newMarkers.getFirst() + "rightmarker");
 		if (rightNeighbor.name().equals(newMarkers.getFirst())) {
 			rightMark = true;
 		}
@@ -173,9 +165,9 @@ public class ProcessImpl extends ProcessPOA implements Runnable {
 			leftMark = true;
 		}
 
-		//wenn die marker von beiden nachbarn true sind, wird der koordinator informiert
 		if (rightMark && leftMark) {
-			if (terminateMark) {//nachricht, das prozess fertig ist
+			System.out.println("right and left true");
+			if (terminateMark) {
 				Process pro;
 				try {
 					pro = ProcessHelper.narrow(poa.servant_to_reference(this));
@@ -183,7 +175,7 @@ public class ProcessImpl extends ProcessPOA implements Runnable {
 				} catch (ServantNotActive | WrongPolicy e) {
 					e.printStackTrace();
 				}
-			} else {//nachricht, dass prozess noch nicht fertig ist
+			} else {
 				Process pro;
 				try {
 					pro = ProcessHelper.narrow(poa.servant_to_reference(this));
@@ -194,8 +186,6 @@ public class ProcessImpl extends ProcessPOA implements Runnable {
 
 			}
 		}
-		
-		//monitor wird informiert, dass prozess fertig/noch nicht fertig ist
 		if(rightMark && leftMark && terminateMark){
 			
 			theMonitor.terminieren(name, newMarkers.poll(), true);
@@ -215,7 +205,7 @@ public class ProcessImpl extends ProcessPOA implements Runnable {
 			}
 			mi = ((mi - 1) % newNumbers.poll()) + 1;
 
-			terminateMark = false;//terminate marker wird zurueckgesetzt
+			terminateMark = false;
 			
 			//nachbarn neuen wert mitteilen
 			rightNeighbor.newNumber(mi, this.name);
