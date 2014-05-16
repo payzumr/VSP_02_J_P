@@ -44,7 +44,17 @@ public class TerminatorThread extends Thread {
 
 				} else {
 					running = false;
-
+					koord.monitor.ergebnis(koord.lastProcess.name(), koord.lastProcess.mi());
+					//Aufruf der Exit Methode der Starter					
+					Starter[] tmp = null;
+					try {
+						tmp = koord.getStarterListe();
+					} catch (EStarterNoSuchElement e) {
+						e.printStackTrace();
+					}
+					for (int i = 0; i < tmp.length; i++) {
+						tmp[i].processExit();
+					}
 				}
 				sleep(termTime);
 			} catch (InterruptedException e) {

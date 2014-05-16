@@ -163,7 +163,6 @@ public class ProcessImpl extends ProcessPOA implements Runnable {
 		}else{
 			newSeqNumbers.poll();
 		}
-		theMonitor.terminieren(name, newMarkers.getFirst(), terminateMark);
 		
 		/*
 		 * wenn die nachricht von einem nachbarn eingetroffen ist,
@@ -200,8 +199,12 @@ public class ProcessImpl extends ProcessPOA implements Runnable {
 		}
 		
 		//monitor wird informiert, dass prozess fertig/noch nicht fertig ist
-			newMarkers.poll();
-
+		if(terminateMark){
+			
+			theMonitor.terminieren(name, newMarkers.poll(), true);
+		}else{
+			theMonitor.terminieren(name, newMarkers.poll(), false);
+		}
 	}
 /**
  * berechnet neues Mi mithilfe des alten Mi und neum wert des nachbarn

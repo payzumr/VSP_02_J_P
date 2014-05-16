@@ -58,18 +58,6 @@ public class KoordinatorImpl extends KoordinatorPOA {
 			if (terminatedProcessCounter == ringProcesses.size()) {
 				lastProcess = terminator;
 				terminated = true;
-				tt.setRunning(false);
-				//Aufruf der Exit Methode der Starter					
-				Starter[] tmp = null;
-				try {
-					tmp = koord.getStarterListe();
-				} catch (EStarterNoSuchElement e) {
-					e.printStackTrace();
-				}
-				for (int i = 0; i < tmp.length; i++) {
-					tmp[i].processExit();
-				}
-				monitor.ergebnis(lastProcess.name(), lastProcess.mi());
 			}
 		} else if (aktuelleSeqN < seqN) {
 			if (status) {

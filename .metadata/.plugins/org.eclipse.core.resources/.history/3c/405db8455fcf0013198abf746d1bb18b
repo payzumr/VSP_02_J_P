@@ -59,6 +59,7 @@ public class KoordinatorImpl extends KoordinatorPOA {
 				lastProcess = terminator;
 				terminated = true;
 				tt.setRunning(false);
+				monitor.ergebnis(lastProcess.name(), lastProcess.mi());
 				//Aufruf der Exit Methode der Starter					
 				Starter[] tmp = null;
 				try {
@@ -69,7 +70,6 @@ public class KoordinatorImpl extends KoordinatorPOA {
 				for (int i = 0; i < tmp.length; i++) {
 					tmp[i].processExit();
 				}
-				monitor.ergebnis(lastProcess.name(), lastProcess.mi());
 			}
 		} else if (aktuelleSeqN < seqN) {
 			if (status) {

@@ -62,11 +62,8 @@ public class ProcessImpl extends ProcessPOA implements Runnable {
 	@Override
 	public synchronized void newNumber(int number, String name) {
 		theMonitor.rechnen(this.name, name, number);
-		if (number < mi) {
-			terminateMark = false;//terminate marker wird zurueckgesetzt
 		newNumbers.add(number);
 		commandFifo.add(ProcessStatus.CALCULATE);
-		}
 	}
 
 	/**
@@ -163,7 +160,6 @@ public class ProcessImpl extends ProcessPOA implements Runnable {
 		}else{
 			newSeqNumbers.poll();
 		}
-		theMonitor.terminieren(name, newMarkers.getFirst(), terminateMark);
 		
 		/*
 		 * wenn die nachricht von einem nachbarn eingetroffen ist,
@@ -200,14 +196,18 @@ public class ProcessImpl extends ProcessPOA implements Runnable {
 		}
 		
 		//monitor wird informiert, dass prozess fertig/noch nicht fertig ist
-			newMarkers.poll();
-
+		if(rightMark && leftMark && terminateMark){
+			
+			theMonitor.terminieren(name, newMarkers.poll(), true);
+		}else{
+			theMonitor.terminieren(name, newMarkers.poll(), false);
+		}
 	}
 /**
  * berechnet neues Mi mithilfe des alten Mi und neum wert des nachbarn
  */
 	private void calculateMi() {
-
+		if (newNumbers.getFirst() < mi) {
 			try {
 				Thread.sleep(delay);// simulate complex calculation
 			} catch (InterruptedException e) {
@@ -215,12 +215,14 @@ public class ProcessImpl extends ProcessPOA implements Runnable {
 			}
 			mi = ((mi - 1) % newNumbers.poll()) + 1;
 
-
+			terminateMark = false;//terminate marker wird zurueckgesetzt
 			
 			//nachbarn neuen wert mitteilen
 			rightNeighbor.newNumber(mi, this.name);
 			leftNeighbor.newNumber(mi, this.name);
-
+		} else {
+			newNumbers.poll();
+		}
 
 	}
 
